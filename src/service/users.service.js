@@ -1,6 +1,21 @@
 const usersDAO = require("../dao/usersDAO");
 const crypto = require("crypto");
 
+const handleSkills = (oldData, updateData) => {
+  if (!oldData.skills || oldData.skills.length === 0) {
+    return updateData.skills || [];
+  }
+  if (!updateData.skills || updateData.skills.length === 0) {
+    return [];
+  }
+  const updateSkillsSet = new Set(updateData.skills);
+  const retainedSkills = oldData.skills.filter((skill) =>
+    updateSkillsSet.has(skill)
+  );
+
+  return Array.from(new Set([...retainedSkills, ...updateData.skills]));
+};
+
 const createUser = async (userData) => {
   const existingUser = await usersDAO.getUserByUsername(userData.username);
   if (existingUser) {
@@ -12,11 +27,15 @@ const createUser = async (userData) => {
   return userData.id;
 };
 
-const updateUserById = async (id, updateData) => {
+const updateUserById = async (id, oldData, updateData) => {
+  const updatedSkills = handleSkills(oldData, updateData);
+  updateData.skills = updatedSkills;
   await usersDAO.updateUserById(id, updateData);
 };
 
-const updateUserByUsername = async (username, updateData) => {
+const updateUserByUsername = async (username, oldData, updateData) => {
+  const updatedSkills = handleSkills(oldData, updateData);
+  updateData.skills = updatedSkills;
   await usersDAO.updateUserByUsername(username, updateData);
 };
 

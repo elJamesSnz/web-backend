@@ -82,7 +82,6 @@ const usersController = async (event) => {
           };
         }
         break;
-
       case "POST":
         const validationResult = usersSchema.validate(data);
         if (validationResult.error) {
@@ -93,10 +92,22 @@ const usersController = async (event) => {
           };
           break;
         }
-        const userId = await userService.createUser(data);
-        responseBody = userId
-          ? { status: 201, msg: "Usuario creado", data: { id: userId } }
-          : { status: 400, msg: "El nombre de usuario ya está en uso" };
+
+        const userToCreate = await userService.getUserByUsername(data.username);
+        if (userToCreate) {
+          statusCode = 400;
+          responseBody = {
+            status: 400,
+            msg: `Usuario con username {${data.username}} ya en uso`,
+          };
+        } else {
+          const userId = await userService.createUser(data);
+          responseBody = {
+            status: 201,
+            msg: "Usuario creado",
+            data: { id: userId },
+          };
+        }
         break;
 
       case "PUT":
@@ -129,14 +140,19 @@ const usersController = async (event) => {
               break;
             }
           }
+
           if (data.id) {
-            await userService.updateUserById(data.id, data);
+            await userService.updateUserById(data.id, userToUpdate, data);
             responseBody = {
               status: 200,
               msg: `Usuario con id {${data.id}} actualizado`,
             };
           } else {
-            await userService.updateUserByUsername(data.username, data);
+            await userService.updateUserByUsername(
+              data.username,
+              userToUpdate,
+              data
+            );
             responseBody = {
               status: 200,
               msg: `Usuario con username {${data.username}} actualizado`,
